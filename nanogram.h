@@ -28,5 +28,4 @@ public:
 	void print(vector<vector<long>> toPrint);
 	void print(vector<long> toPrint);
 
-
 };

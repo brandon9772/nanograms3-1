@@ -57,7 +57,6 @@ Nanogram::Nanogram(string fileName) {
 		mustFillRow.push_back(~allBitOne);
 		mustFillRow.push_back(~allBitOne);
 		rowCondition.push_back(thisRow);
-
 	}
 	myfile.close();
 	reverse(colCondition.begin(), colCondition.end());

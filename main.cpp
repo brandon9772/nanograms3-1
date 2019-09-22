@@ -14,5 +14,6 @@ int main()
 {
 	Nanogram nanogram = Nanogram("..question/question1_5x5.txt");
 	nanogram.printAll();
+
 }
 
