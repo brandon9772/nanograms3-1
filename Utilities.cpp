@@ -1,5 +1,7 @@
 #include "Utilities.h"
 #include <bitset>
+#include <iostream>
+using namespace std;
 
 Utilities::Utilities()
 {
@@ -26,8 +28,36 @@ void Utilities::updateCrossFillColByRow(Nanograms* nanograms)
 	}
 	reverse(updateMustCrossCol.begin(), updateMustCrossCol.end());
 	reverse(updateMustFillCol.begin(), updateMustFillCol.end());
-	nanograms->mustCrossCol = updateMustCrossCol;
-	nanograms->mustFillCol = updateMustFillCol;
+	for (int i = 0; i < nanograms->colSize; i++) {
+		nanograms->mustCrossCol.at(i) |= updateMustCrossCol.at(i);
+		nanograms->mustFillCol.at(i) |= updateMustFillCol.at(i);
+	}
+}
+
+
+void Utilities::updateCrossFillRowByCol(Nanograms* nanograms)
+{
+	long zero = 0;
+	long allZero = zero ^ zero;
+	long initCross = ~allZero << nanograms->rowSize;
+	vector<long> updateMustCrossRow(nanograms->rowSize, initCross);
+	vector<long> updateMustFillRow(nanograms->rowSize, allZero);
+	for (int i = 0; i < nanograms->colSize; i++) {
+		for (int j = 0; j < nanograms->rowSize; j++) {
+			if (nanograms->mustCrossCol.at(i) & (1 << j)) {
+				updateMustCrossRow.at(j) |= 1UL << nanograms->colSize - i - 1;
+			}
+			if (nanograms->mustFillCol.at(i) & (1 << j)) {
+				updateMustFillRow.at(j) |= 1UL << nanograms->colSize - i - 1;
+			}
+		}
+	}
+	reverse(updateMustCrossRow.begin(), updateMustCrossRow.end());
+	reverse(updateMustFillRow.begin(), updateMustFillRow.end());
+	for (int i = 0; i < nanograms->rowSize; i++) {
+		nanograms->mustCrossRow.at(i) |= updateMustCrossRow.at(i);
+		nanograms->mustFillRow.at(i) |= updateMustFillRow.at(i);
+	}
 }
 
 void Utilities::initAllStart(Nanograms* nanograms)
@@ -96,6 +126,7 @@ void Utilities::updateFillCrossByStart(Nanograms* nanograms)
 		}
 		nanograms->mustCrossRow.at(i) |= mustCross;
 	}
+	updateCrossFillColByRow(nanograms);
 	for (int i = 0; i < nanograms->colSize; i++) {
 		mustCross = allOne;
 		for (int j = 0; j < nanograms->allStartCol.at(i).size(); j++) {
@@ -113,6 +144,7 @@ void Utilities::updateFillCrossByStart(Nanograms* nanograms)
 		}
 		nanograms->mustCrossCol.at(i) |= mustCross;
 	}
+	updateCrossFillRowByCol(nanograms);
 }
 
 void Utilities::updateStartByFillCross(Nanograms* nanograms)
@@ -126,22 +158,39 @@ void Utilities::updateStartByFillCross(Nanograms* nanograms)
 	long start;
 	long mayFillLeft;
 	long mayFillRight;
+	long leftRightIsFill;
 	unsigned short int thisConditionSize;
 	unsigned short int rightSetBit;
 	unsigned short int leftSetBit;
 	long thisCondition;
 	//cross only filter
+	cout << "updateStartByFillCross starst" << endl;
+	nanograms->printAllBit();
+	cout << "updateStartByFillCross end" << endl;
+
 	for (int i = 0; i < nanograms->rowSize; i++) {
 		for (int j = 0; j < nanograms->allStartRow.at(i).size(); j++) {
 			start = nanograms->allStartRow.at(i).at(j);
 			thisConditionSize = nanograms->rowCondition.at(i).at(j);
 			thisCondition = fillLongBitByRange(0, thisConditionSize);
 			mustCross = nanograms->mustCrossRow.at(i);
+			mustFill = nanograms->mustFillRow.at(i);
 			rightSetBit = findRightMostSetBitLong(start, nanograms->rowSize);
 			leftSetBit = findLeftMostSetBitLong(start, nanograms->rowSize);
-			for (int k = rightSetBit + 1 - thisConditionSize; k < leftSetBit + 1 - thisConditionSize; k++) {
+			for (int k = rightSetBit + 1 - thisConditionSize; k < leftSetBit + 2 - thisConditionSize; k++) {
 				if (((thisCondition << k) & mustCross) != allZero) {
-					nanograms->allStartRow.at(i).at(j) = nanograms->allStartRow.at(i).at(j) & ~(1 << k);
+					nanograms->allStartRow.at(i).at(j) = nanograms->allStartRow.at(i).at(j) & ~(1 << k + thisConditionSize - 1);
+					continue;
+				}
+				if (k == 0) {
+					leftRightIsFill = 1UL << k + thisConditionSize;
+				}
+				else {
+					leftRightIsFill = (1UL << k + thisConditionSize) | (1UL << k - 1);
+				}
+				if ((leftRightIsFill & mustFill) != allZero) {
+					nanograms->allStartRow.at(i).at(j) = nanograms->allStartRow.at(i).at(j) & ~(1 << k + thisConditionSize - 1);
+					continue;
 				}
 			}
 		}
@@ -163,6 +212,87 @@ void Utilities::updateStartByFillCross(Nanograms* nanograms)
 	}
 }
 
+void Utilities::updateFillCrossBySolveStart(Nanograms* nanograms)
+{
+	long one = 0;
+	long allOne = (~one) | one;
+	long mustFill;
+	long mustCross;
+	long mayFill;
+	long start;
+	long startCol;
+	long mayFillLeft;
+	long mayFillRight;
+	int solveCounter;
+	unsigned short int thisConditionSize;
+	unsigned short int rightSetBit;
+	unsigned short int leftSetBit;
+	long thisCondition;
+	for (int i = 0; i < nanograms->rowSize; i++) {
+		mustCross = allOne;
+		solveCounter = 0;
+		for (int j = 0; j < nanograms->allStartRow.at(i).size(); j++) {
+			start = nanograms->allStartRow.at(i).at(j);
+			rightSetBit = findRightMostSetBitLong(start, nanograms->rowSize);
+			leftSetBit = findLeftMostSetBitLong(start, nanograms->rowSize);
+			thisConditionSize = nanograms->rowCondition.at(i).at(j);
+			thisCondition = fillLongBitByRange(0, thisConditionSize);
+			if (rightSetBit == leftSetBit) {
+				solveCounter++;
+				nanograms->mustFillRow.at(i) |= (thisCondition << rightSetBit + 1 - thisConditionSize);
+				nanograms->mustCrossRow.at(i) |= (thisCondition << rightSetBit + 1);
+				if ((rightSetBit - thisConditionSize + 1) != 0) {
+					nanograms->mustCrossRow.at(i) |= (thisCondition << rightSetBit - thisConditionSize);
+				}
+			}
+		}
+		if (solveCounter == nanograms->allStartRow.at(i).size()) {
+			nanograms->mustCrossRow.at(i) = ~(nanograms->mustFillRow.at(i));
+		}
+	}
+	for (int i = 0; i < nanograms->colSize; i++) {
+		mustCross = allOne;
+		solveCounter = 0;
+		for (int j = 0; j < nanograms->allStartCol.at(i).size(); j++) {
+			start = nanograms->allStartCol.at(i).at(j);
+			rightSetBit = findRightMostSetBitLong(start, nanograms->colSize);
+			leftSetBit = findLeftMostSetBitLong(start, nanograms->colSize);
+			thisConditionSize = nanograms->colCondition.at(i).at(j);
+			thisCondition = fillLongBitByRange(0, thisConditionSize);
+			if (rightSetBit == leftSetBit) {
+				solveCounter++;
+				nanograms->mustFillCol.at(i) |= (thisCondition << rightSetBit + 1 - thisConditionSize);
+				nanograms->mustCrossCol.at(i) |= (thisCondition << rightSetBit + 1);
+				if ((rightSetBit - thisConditionSize + 1) != 0) {
+					nanograms->mustCrossCol.at(i) |= (thisCondition << rightSetBit - thisConditionSize);
+				}
+			}
+		}
+		if (solveCounter == nanograms->allStartCol.at(i).size()) {
+			nanograms->mustCrossCol.at(i) = ~(nanograms->mustFillCol.at(i));
+		}
+	}
+}
+
+//not done
+bool isPossible(
+	Nanograms* nanograms,
+	bool isRow,
+	unsigned short int rowNumber,
+	unsigned short int gapStart,
+	unsigned short int gapEnd,
+	unsigned short int conditionStart,
+	unsigned short int conditionEnd
+) {
+	unsigned short int size;
+	if (isRow) {
+		size = nanograms->rowSize;
+	}
+	else {
+		size = nanograms->colSize;
+	}
+}
+
 long Utilities::fillLongBitByRange(unsigned short int start, unsigned short int end)
 {
 	return (((1 << (start)) - 1) ^ ((1 << (end)) - 1));;
@@ -172,7 +302,7 @@ unsigned short int Utilities::findRightMostSetBitLong(long number, unsigned shor
 {
 	long allZero = ~number & number;
 	for (unsigned short int i = 0; i < size; i++) {
-		if ((number & (1UL << i))!= allZero) {
+		if ((number & (1UL << i)) != allZero) {
 			return i;
 		}
 	}
@@ -190,28 +320,8 @@ unsigned short int Utilities::findLeftMostSetBitLong(long number, unsigned short
 	if ((number & (1UL << 0)) != allZero) {
 		return 0;
 	}
-	return - 1;
+	return -1;
 }
 
 
 
-void Utilities::updateCrossFillRowByCol(Nanograms* nanograms)
-{
-	long zero = 0;
-	long allZero = zero ^ zero;
-	long initCross = ~allZero << nanograms->rowSize;
-	vector<long> updateMustCrossRow(nanograms->rowSize, initCross);
-	vector<long> updateMustFillRow(nanograms->rowSize, allZero);
-	for (int i = 0; i < nanograms->colSize; i++) {
-		for (int j = 0; j < nanograms->rowSize; j++) {
-			if (nanograms->mustCrossCol.at(i) & (1 << j)) {
-				updateMustCrossRow.at(j) |= 1UL << nanograms->colSize - i - 1;
-			}
-			if (nanograms->mustFillCol.at(i) & (1 << j)) {
-				updateMustFillRow.at(j) |= 1UL << nanograms->colSize - i - 1;
-			}
-		}
-	}
-	nanograms->mustCrossRow = updateMustCrossRow;
-	nanograms->mustFillRow = updateMustFillRow;
-}

@@ -22,5 +22,7 @@ int main()
 	nanograms.printAllBit();
 	utilities.updateStartByFillCross(&nanograms);
 	nanograms.printAllBit();
+	utilities.updateFillCrossBySolveStart(&nanograms);
+	nanograms.printAllBit();
 }
 
