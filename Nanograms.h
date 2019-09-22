@@ -6,7 +6,7 @@
 #include <vector>
 using namespace std;
 
-class Nanogram {
+class Nanograms {
 
 public:
 	unsigned short int colSize;
@@ -21,11 +21,16 @@ public:
 	vector<long> mustCrossRow;
 	vector<long> mustFillRow;
 
-	Nanogram(string fileName);
+	Nanograms(string fileName);
 	void printAll();
+	void printAllBit();
 	void printVariable(string variable);
+	void printBitVariable(string variable);
+	void printBit(vector<vector<long>> toPrint);
+	void printBit(vector<long> toPrint);
 	void print(vector<vector<unsigned short int>> toPrint);
 	void print(vector<vector<long>> toPrint);
 	void print(vector<long> toPrint);
+
 
 };

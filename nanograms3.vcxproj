@@ -124,13 +124,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="nanogram.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="nanogram.h" />
+    <ClCompile Include="Nanograms.cpp" />
+    <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="question1_5x5.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Nanograms.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

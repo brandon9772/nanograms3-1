@@ -7,13 +7,14 @@
 #include <vector>
 #include <bitset>
 #include <ctime>
-#include "nanogram.h"
+#include "Nanograms.h"
+#include "Utilities.h"
 using namespace std;
 
 int main()
 {
-	Nanogram nanogram = Nanogram("..question/question1_5x5.txt");
-	nanogram.printAll();
-
+	Nanograms nanograms = Nanograms("question1_5x5.txt");
+	Utilities utilities = Utilities();
+	nanograms.printAllBit();
 }
 

@@ -1,12 +1,13 @@
-#include "nanogram.h"
+#include "Nanograms.h"
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <bitset>
 using namespace std;
 
-Nanogram::Nanogram(string fileName) {
+Nanograms::Nanograms(string fileName) {
 	cout << "started" << endl;
 	string line;
 	ifstream myfile(fileName);
@@ -19,6 +20,8 @@ Nanogram::Nanogram(string fileName) {
 	issRow >> rowSize;
 	long one = 1;
 	long allBitOne = one | ~one;
+	long startCol = (unsigned)(allBitOne << 64 - colSize) >> 64 - colSize;
+	long startRow = (unsigned)(allBitOne << 64 - rowSize) >> 64 - colSize;
 	long crossDefaultCol = allBitOne << colSize;
 	long crossDefaultRow = allBitOne << rowSize;
 
@@ -30,12 +33,10 @@ Nanogram::Nanogram(string fileName) {
 
 		for (unsigned short int condition; entry >> condition;) {
 			thisCol.push_back(condition);
-			thisStart.push_back(allBitOne);
+			thisStart.push_back(startCol);
 		}
 		allStartCol.push_back(thisStart);
 		mustCrossCol.push_back(crossDefaultCol);
-		mustCrossCol.push_back(crossDefaultCol);
-		mustFillCol.push_back(~allBitOne);
 		mustFillCol.push_back(~allBitOne);
 		colCondition.push_back(thisCol);
 
@@ -49,21 +50,17 @@ Nanogram::Nanogram(string fileName) {
 
 		for (unsigned short int condition; entry >> condition;) {
 			thisRow.push_back(condition);
-			thisStart.push_back(allBitOne);
+			thisStart.push_back(startRow);
 		}
 		allStartRow.push_back(thisStart);
 		mustCrossRow.push_back(crossDefaultRow);
-		mustCrossRow.push_back(crossDefaultRow);
-		mustFillRow.push_back(~allBitOne);
 		mustFillRow.push_back(~allBitOne);
 		rowCondition.push_back(thisRow);
 	}
 	myfile.close();
-	reverse(colCondition.begin(), colCondition.end());
-	reverse(rowCondition.begin(), rowCondition.end());
 }
 
-void Nanogram::printAll()
+void Nanograms::printAll()
 {
 	cout << "colSize" << endl;
 	cout << colSize << endl << endl;
@@ -87,7 +84,31 @@ void Nanogram::printAll()
 	print(mustFillRow);
 }
 
-void Nanogram::printVariable(string variable)
+void Nanograms::printAllBit()
+{
+	cout << "colSize" << endl;
+	cout << colSize << endl << endl;
+	cout << "rowSize" << endl;
+	cout << rowSize << endl << endl;
+	cout << "colCondition" << endl;
+	print(colCondition);
+	cout << "rowCondition" << endl;
+	print(rowCondition);
+	cout << "allStartCol" << endl;
+	printBit(allStartCol);
+	cout << "allStartRow" << endl;
+	printBit(allStartRow);
+	cout << "mustCrossCol" << endl;
+	printBit(mustCrossCol);
+	cout << "mustFillCol" << endl;
+	printBit(mustFillCol);
+	cout << "mustCrossRow" << endl;
+	printBit(mustCrossRow);
+	cout << "mustFillRow" << endl;
+	printBit(mustFillRow);
+}
+
+void Nanograms::printVariable(string variable)
 {
 	if (variable == "colSize") {
 		cout << "colSize" << endl;
@@ -134,7 +155,76 @@ void Nanogram::printVariable(string variable)
 	}
 }
 
-void Nanogram::print(vector<vector<unsigned short int>> toPrint)
+void Nanograms::printBitVariable(string variable)
+{
+	if (variable == "colSize") {
+		cout << "colSize" << endl;
+		cout << colSize << endl << endl;
+	}
+	else if (variable == "rowSize") {
+		cout << "rowSize" << endl;
+		cout << rowSize << endl << endl;
+	}
+	else if (variable == "colCondition") {
+		cout << "colCondition" << endl;
+		print(colCondition);
+	}
+	else if (variable == "rowCondition") {
+		cout << "rowCondition" << endl;
+		print(rowCondition);
+	}
+	else if (variable == "allStartCol") {
+		cout << "allStartCol" << endl;
+		printBit(allStartCol);
+	}
+	else if (variable == "allStartRow") {
+		cout << "allStartRow" << endl;
+		printBit(allStartRow);
+	}
+	else if (variable == "mustCrossCol") {
+		cout << "mustCrossCol" << endl;
+		printBit(mustCrossCol);
+	}
+	else if (variable == "mustFillCol") {
+		cout << "mustFillCol" << endl;
+		printBit(mustFillCol);
+	}
+	else if (variable == "mustCrossRow") {
+		cout << "mustCrossRow" << endl;
+		printBit(mustCrossRow);
+	}
+	else if (variable == "mustFillRow") {
+		cout << "mustFillRow" << endl;
+		printBit(mustFillRow);
+	}
+	else {
+		cout << "no such variable" << endl << endl;
+	}
+}
+
+void Nanograms::printBit(vector<long> toPrint)
+{
+	int size = toPrint.size();
+	for (int i = 0; i < size; i++) {
+		cout << i << ": " << bitset<64>(toPrint.at(i)) << endl;
+	}
+	cout << "end." << endl << endl;
+}
+
+void Nanograms::printBit(vector<vector<long>> toPrint)
+{
+	int size = toPrint.size();
+	for (int i = 0; i < size; i++) {
+		cout << i << ": ";
+		for (int j = 0; j < toPrint.at(i).size(); j++) {
+			cout << bitset<64>(toPrint.at(i).at(j)) << ", ";
+		}
+		cout << endl;
+	}
+	cout << "end." << endl << endl;
+}
+
+void Nanograms::print(vector<vector<unsigned short int>> toPrint)
 {
 	int size = toPrint.size();
 	for (int i = 0; i < size; i++) {
@@ -147,7 +237,7 @@ void Nanogram::print(vector<vector<unsigned short int>> toPrint)
 	cout << "end." << endl << endl;
 }
 
-void Nanogram::print(vector<vector<long>> toPrint)
+void Nanograms::print(vector<vector<long>> toPrint)
 {
 	int size = toPrint.size();
 	for (int i = 0; i < size; i++) {
@@ -160,7 +250,7 @@ void Nanogram::print(vector<vector<long>> toPrint)
 	cout << "end." << endl << endl;
 }
 
-void Nanogram::print(vector<long> toPrint)
+void Nanograms::print(vector<long> toPrint)
 {
 	int size = toPrint.size();
 	for (int i = 0; i < size; i++) {
